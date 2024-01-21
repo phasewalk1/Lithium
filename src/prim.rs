@@ -1,3 +1,6 @@
+use crate::eval::Eval;
+use std::rc::Rc;
+
 #[derive(Debug, PartialEq)]
 pub(super) struct Atom(pub i32);
 
@@ -42,11 +45,11 @@ impl TryFrom<&str> for SymbolicId {
 pub(super) struct Function {
     sid: Option<SymbolicId>,
     oid: Option<u8>,
-    f: fn(&[Value]) -> Value,
+    f: fn(&[Rc<Value>]) -> Value,
 }
 
 impl Function {
-    pub(super) fn new(id: SymbolicId, f: fn(&[Value]) -> Value) -> Self {
+    pub(super) fn new(id: SymbolicId, f: fn(&[Rc<Value>]) -> Value) -> Self {
         Self {
             sid: Some(id),
             oid: None,
@@ -54,7 +57,7 @@ impl Function {
         }
     }
 
-    pub(super) fn new_operator(id: u8, f: fn(&[Value]) -> Value) -> Self {
+    pub(super) fn new_operator(id: u8, f: fn(&[Rc<Value>]) -> Value) -> Self {
         Self {
             sid: None,
             oid: Some(id),
@@ -62,41 +65,49 @@ impl Function {
         }
     }
 
-    pub(super) fn apply(&self, args: &[Value]) -> Value {
+    pub(super) fn apply(&self, args: &[std::rc::Rc<Value>]) -> Value {
         (self.f)(args)
     }
 }
 
 #[derive(Debug, PartialEq)]
+pub(super) struct Symbol {
+    id: SymbolicId,
+    value: Value,
+}
+
+#[derive(Debug, PartialEq)]
 pub(super) struct Cell {
-    pub(super) car: Box<Value>,
-    pub(super) cdr: Box<Value>,
+    pub(super) car: Rc<Value>,
+    pub(super) cdr: Rc<Value>,
 }
 
 impl Cell {
     pub(super) fn list(car: Value, cdr: Value) -> Self {
         let tail = Value::Nil;
         Self {
-            car: Box::new(car),
-            cdr: Box::new(Value::Cell(Cell {
-                car: Box::new(cdr),
-                cdr: Box::new(tail),
+            car: Rc::new(car),
+            cdr: Rc::new(Value::Cell(Cell {
+                car: Rc::new(cdr),
+                cdr: Rc::new(tail),
             })),
         }
     }
 
     pub(super) fn cons(car: Value, cdr: Value) -> Self {
         Self {
-            car: Box::new(car),
-            cdr: Box::new(cdr),
+            car: Rc::new(car),
+            cdr: Rc::new(cdr),
         }
     }
 
-    pub(super) fn from_vec(elements: Vec<Value>) -> Self {
+    pub(super) fn from_vec(elements: Vec<Rc<Value>>) -> Self {
         let mut tail = Value::Nil;
 
         for elem in elements.into_iter().rev() {
-            tail = Value::Cell(Cell::cons(elem, tail));
+            tail = Value::Cell(Cell::cons(
+                Rc::try_unwrap(elem).unwrap(), tail
+            ));
         }
 
         if let Value::Cell(cell) = tail {
@@ -106,14 +117,13 @@ impl Cell {
         }
     }
 
-    pub(super) fn reduce_args(&self) -> Vec<Value> {
+    pub(super) fn reduce_args(&self) -> Vec<Rc<Value>> {
         let mut args = vec![];
         let mut curr = self;
 
         while let Value::Cell(ref cell) = *curr.cdr {
-            unimplemented!();
-            // args.push(cell.car.eval());
-            // curr = &cell;
+            args.push(Rc::new(cell.car.eval()));
+            curr = &cell;
         }
 
         args
@@ -126,6 +136,19 @@ impl Cell {
     pub(super) fn cdr(&self) -> &Value {
         &self.cdr
     }
+
+    pub(super) fn disassemble(&self) -> (Rc<Value>, Vec<Rc<Value>>) {
+        let first = Rc::clone(&self.car);
+        let mut rest = vec![];
+        let mut curr = self;
+
+        while let Value::Cell(ref cell) = *curr.cdr {
+            rest.push(Rc::clone(&cell.car));
+            curr = &cell;
+        }
+
+        (first, rest)
+    }
 }
 
 #[derive(PartialEq)]
@@ -133,6 +156,7 @@ pub(super) enum Value {
     Nil,
     Atom(Atom),
     Function(Function),
+    Symbol(SymbolicId),
     Cell(Cell),
 }
 
@@ -142,7 +166,8 @@ impl std::fmt::Debug for Value {
             Value::Nil => write!(f, "nil"),
             Value::Atom(a) => write!(f, "{:?}", a),
             Value::Function(_) => write!(f, "<function>"),
-            Value::Cell(c) => write!(f, "({:?} . {:?})", c.car, c.cdr),
+            Value::Symbol(s) => write!(f, "<sym> {:?}", s),
+            Value::Cell(c) => write!(f, "<cell> ({:?} . {:?})", c.car, c.cdr),
         }
     }
 }

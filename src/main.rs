@@ -3,9 +3,10 @@
 mod eval;
 mod token;
 use token::Tokenizer;
-mod primitives;
+mod prim;
+mod reducers;
 #[allow(unused_imports)]
-use primitives::{Atom, Function, Nil, SymbolicId};
+use prim::{Atom, Function, Nil, SymbolicId};
 
 use rustyline::error::ReadlineError;
 fn main() -> Result<(), ReadlineError> {
