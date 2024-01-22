@@ -1,15 +1,9 @@
-use crate::prim::{
-    Atom,
-    Cell,
-    Function,
-    SymbolId,
-    Value, 
-};
+use crate::prim::{Atom, Cell, Value};
 use crate::token::Token;
 use crate::OPERATORS;
 use std::iter::Peekable;
-use std::slice::Iter;
 use std::rc::Rc;
+use std::slice::Iter;
 
 #[derive(Debug)]
 pub struct Parser;
@@ -28,11 +22,11 @@ impl Parser {
 
     fn parse_expression(iter: &mut Peekable<Iter<Token>>) -> Result<Value, String> {
         match iter.next() {
-            Some(Token::Atom(n))      => Ok(Value::Atom(Atom(*n))),
-            Some(Token::LParen)       => Self::parse_list(iter),
-            Some(Token::RParen)       => Err("Unexpected ')'".into()),
+            Some(Token::Atom(n)) => Ok(Value::Atom(Atom(*n))),
+            Some(Token::LParen) => Self::parse_list(iter),
+            Some(Token::RParen) => Err("Unexpected ')'".into()),
             Some(Token::Operator(op)) => Self::parse_operator(op),
-            None                      => Err("Unexpected end of input".into()),
+            None => Err("Unexpected end of input".into()),
         }
     }
 
@@ -57,7 +51,7 @@ impl Parser {
                 Ok(Value::Operator(
                         operator.clone().into()))
             },
-            None           => Err("Unknown operator".into()),
+            None => Err("Unknown operator".into()),
         }
     }
 }

@@ -1,8 +1,4 @@
-use crate::prim::{
-    Atom,
-    Cell,
-    Value,
-};
+use crate::prim::{Atom, Cell, Value};
 
 use std::rc::Rc;
 
@@ -18,14 +14,13 @@ impl Eval for Atom {
 
 impl Eval for Cell {
     fn eval(&self) -> Value {
-        crate::reducers::BetaReducer::new(&self)
-            .reduce_cbv()
+        crate::reducers::BetaReducer::new(&self).cbv()
     }
 }
 
 impl Eval for Value {
     fn eval(&self) -> Value {
-        #[rustfmt::skip] 
+        #[rustfmt::skip]
         match self {
             Value::Atom(atom)         => atom.eval(),
             Value::Cell(cell)         => cell.eval(),

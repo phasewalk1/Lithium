@@ -2,14 +2,14 @@ use crate::eval::Eval;
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
-pub(super) struct Atom(pub i32);
+pub struct Atom(pub i32);
 
-pub(super) trait Identifier {
+pub trait Identifier {
     fn id(&self) -> Vec<u8>;
 }
 
 #[derive(Debug, PartialEq)]
-pub(super) struct SymbolId([u8; 32]);
+pub struct SymbolId([u8; 32]);
 
 impl TryFrom<&str> for SymbolId {
     type Error = Box<dyn std::error::Error>;
@@ -23,7 +23,6 @@ impl TryFrom<&str> for SymbolId {
             }
             _ => Err("SymbolId must be 32 bytes or less".into()),
         }
-
     }
 }
 
@@ -34,18 +33,15 @@ impl Identifier for SymbolId {
 }
 
 #[derive(Debug, PartialEq)]
-pub(super) struct Function {
-    id: SymbolId, 
+pub struct Function {
+    id: SymbolId,
     f: fn(&[Rc<Value>]) -> Value,
 }
 
-
 impl Function {
+    #[allow(dead_code)]
     pub(super) fn new(id: SymbolId, f: fn(&[Rc<Value>]) -> Value) -> Self {
-        Self {
-            id,
-            f,
-        }
+        Self { id, f }
     }
 
     pub(super) fn apply(&self, args: &[std::rc::Rc<Value>]) -> Value {
@@ -60,7 +56,7 @@ impl Identifier for u8 {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct Operator {
+pub struct Operator {
     pub(crate) id: u8,
     pub(crate) f: fn(&[Rc<Value>]) -> Value,
 }
@@ -82,11 +78,12 @@ pub(super) struct Symbol {
 }
 
 #[derive(Debug, PartialEq)]
-pub(super) struct Cell {
+pub struct Cell {
     pub(super) car: Rc<Value>,
     pub(super) cdr: Rc<Value>,
 }
 
+#[allow(dead_code)]
 impl Cell {
     pub(super) fn list(car: Value, cdr: Value) -> Self {
         let tail = Value::Nil;
@@ -110,9 +107,7 @@ impl Cell {
         let mut tail = Value::Nil;
 
         for elem in elements.into_iter().rev() {
-            tail = Value::Cell(Cell::cons(
-                Rc::try_unwrap(elem).unwrap(), tail
-            ));
+            tail = Value::Cell(Cell::cons(Rc::try_unwrap(elem).unwrap(), tail));
         }
 
         if let Value::Cell(cell) = tail {

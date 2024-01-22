@@ -1,9 +1,4 @@
-use lilith::{
-    token::Tokenizer,
-    parser::Parser,
-    eval::Eval,
-    namespace,
-};
+use lilith::{eval::Eval, namespace, parser::Parser, token::Tokenizer};
 use rustyline::error::ReadlineError;
 
 use lazy_static::lazy_static;
@@ -24,13 +19,18 @@ fn main() -> Result<(), ReadlineError> {
                 log::info!("Got tokens: {:?}", tokens);
 
                 let expr = match Parser::parse(&tokens) {
-                    Ok(value) => { log::info!("Built Abstract-Syntax-Tree: {:?}", value); value }
-                    Err(err)  => { panic!("Failed to parse expr error: {:?}", err); },
+                    Ok(value) => {
+                        log::info!("Built Abstract-Syntax-Tree: {:?}", value);
+                        value
+                    }
+                    Err(err) => {
+                        panic!("Failed to parse expr error: {:?}", err);
+                    }
                 };
 
                 let evaluated = expr.eval();
 
-                log::info!("Beta-Normal Form ---> {:?}", evaluated);
+                log::info!("Value ---> {:?}", evaluated);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
