@@ -4,63 +4,46 @@ use std::rc::Rc;
 #[derive(Debug, PartialEq)]
 pub(super) struct Atom(pub i32);
 
-#[derive(PartialEq)]
-pub(super) struct Nil(());
+pub(super) trait Identifier {
+    fn id(&self) -> Vec<u8>;
+}
 
 #[derive(Debug, PartialEq)]
-pub(super) struct SymbolicId([u8; 32]);
+pub(super) struct SymbolId([u8; 32]);
 
-impl SymbolicId {
-    pub(super) fn make_symbolic_id(s: &str) -> Result<Self, Box<dyn std::error::Error>> {
+impl TryFrom<&str> for SymbolId {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
         match s.len() {
             0..=32 => {
                 let mut id = [0; 32];
                 id[..s.len()].copy_from_slice(s.as_bytes());
                 Ok(Self(id))
             }
-            _ => Err("SymbolicId must be 32 bytes or less".into()),
+            _ => Err("SymbolId must be 32 bytes or less".into()),
         }
-    }
 
-    pub(super) fn as_bytes(&self) -> &[u8] {
-        &self.0
     }
 }
 
-impl TryFrom<&str> for SymbolicId {
-    type Error = &'static str;
-
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        if s.len() > 32 {
-            Err("SymbolicId must be 32 bytes or less")
-        } else {
-            let mut id = [0; 32];
-            id[..s.len()].copy_from_slice(s.as_bytes());
-            Ok(Self(id))
-        }
+impl Identifier for SymbolId {
+    fn id(&self) -> Vec<u8> {
+        self.0.to_vec()
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Function {
-    sid: Option<SymbolicId>,
-    oid: Option<u8>,
+    id: SymbolId, 
     f: fn(&[Rc<Value>]) -> Value,
 }
 
-impl Function {
-    pub(super) fn new(id: SymbolicId, f: fn(&[Rc<Value>]) -> Value) -> Self {
-        Self {
-            sid: Some(id),
-            oid: None,
-            f,
-        }
-    }
 
-    pub(super) fn new_operator(id: u8, f: fn(&[Rc<Value>]) -> Value) -> Self {
+impl Function {
+    pub(super) fn new(id: SymbolId, f: fn(&[Rc<Value>]) -> Value) -> Self {
         Self {
-            sid: None,
-            oid: Some(id),
+            id,
             f,
         }
     }
@@ -70,9 +53,31 @@ impl Function {
     }
 }
 
+impl Identifier for u8 {
+    fn id(&self) -> Vec<u8> {
+        vec![*self]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct Operator {
+    pub(crate) id: u8,
+    pub(crate) f: fn(&[Rc<Value>]) -> Value,
+}
+
+impl Operator {
+    pub fn new(id: u8, f: fn(&[Rc<Value>]) -> Value) -> Self {
+        Operator { id, f }
+    }
+
+    pub(super) fn apply(&self, args: &[std::rc::Rc<Value>]) -> Value {
+        (self.f)(args)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub(super) struct Symbol {
-    id: SymbolicId,
+    id: SymbolId,
     value: Value,
 }
 
@@ -152,11 +157,13 @@ impl Cell {
 }
 
 #[derive(PartialEq)]
-pub(super) enum Value {
+pub enum Value {
     Nil,
+    T,
     Atom(Atom),
-    Function(Function),
-    Symbol(SymbolicId),
+    Function(Rc<Function>),
+    Operator(Rc<Operator>),
+    Symbol(SymbolId),
     Cell(Cell),
 }
 
@@ -164,10 +171,12 @@ impl std::fmt::Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Nil => write!(f, "nil"),
+            Value::T => write!(f, "t"),
             Value::Atom(a) => write!(f, "{:?}", a),
             Value::Function(_) => write!(f, "<function>"),
             Value::Symbol(s) => write!(f, "<sym> {:?}", s),
             Value::Cell(c) => write!(f, "<cell> ({:?} . {:?})", c.car, c.cdr),
+            Value::Operator(op) => write!(f, "<op> {:?}@{:?}", op.id, op.f),
         }
     }
 }

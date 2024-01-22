@@ -1,8 +1,9 @@
-use crate::prim::{Cell, Value};
+use crate::prim::{Cell, Function, Value};
 use crate::eval::Eval;
 
 use std::rc::Rc;
 
+#[rustfmt::skip]
 pub(super) struct BetaReducer<'a>
     (pub &'a Cell);
 
@@ -31,6 +32,13 @@ impl<'a> BetaReducer<'a> {
                     .map(|v| Rc::new(v.eval()))
                     .collect::<Vec<Rc<Value>>>();
                 func.apply(&args)
+            }
+            Value::Operator(op) => {
+                let args = cdr.iter()
+                    .map(|v| Rc::new(v.eval()))
+                    .collect::<Vec<Rc<Value>>>();
+                log::debug!("Applying operator {:?} to {:?}", op, args);
+                op.apply(&args)
             }
             Value::Nil => Value::Nil,
             Value::Atom(atom) => Value::Atom(atom),

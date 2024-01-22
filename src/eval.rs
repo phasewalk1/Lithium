@@ -1,13 +1,12 @@
 use crate::prim::{
     Atom,
     Cell,
-    Function,
-    Nil,
-    SymbolicId,
     Value,
 };
 
-pub(super) trait Eval {
+use std::rc::Rc;
+
+pub trait Eval {
     fn eval(&self) -> Value;
 }
 
@@ -18,42 +17,23 @@ impl Eval for Atom {
 }
 
 impl Eval for Cell {
-    #[rustfmt::skip]
     fn eval(&self) -> Value {
-        crate::reducers::BetaReducer
-            ::new(&self).reduce_cbv()
-    }
-}
-
-impl Eval for Function {
-    fn eval(&self) -> Value {
-        todo!()
-    }
-}
-
-impl Eval for Nil {
-    fn eval(&self) -> Value {
-        Value::Nil
+        crate::reducers::BetaReducer::new(&self)
+            .reduce_cbv()
     }
 }
 
 impl Eval for Value {
     fn eval(&self) -> Value {
+        #[rustfmt::skip] 
         match self {
-            Value::Cell(cell) => {
-                // beta-reduction
-                todo!()
-            }
-            Value::Function(function) => {
-                // eta-reduction
-                todo!()
-            }
-            Value::Symbol(symbol) => {
-                // alpha-reduction
-                todo!()
-            }
-            Value::Atom(atom) => atom.eval(),
-            Value::Nil => Value::Nil,
+            Value::Atom(atom)         => atom.eval(),
+            Value::Cell(cell)         => cell.eval(),
+            Value::Nil                => Value::Nil,
+            Value::T                  => Value::T,
+            Value::Function(function) => Value::Function(Rc::clone(function)),
+            Value::Symbol(_)          => todo!(),
+            Value::Operator(op)       => Value::Operator(Rc::clone(op)),
         }
     }
 }
