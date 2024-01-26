@@ -1,62 +1,90 @@
-use crate::OPERATORS;
+use crate::prim::Atom;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    LParen,
-    RParen,
+    Laren,
+    Raren,
     Atom(i32),
     Operator(u8),
+    Keyword(String),
+    Symbol(String),
 }
 
-#[derive(Default)]
-pub struct Tokenizer;
-
-impl Tokenizer {
-    pub fn tokenize(input: &str) -> Vec<Token> {
-        let mut tokens = Vec::new();
-        let mut atom_buffer = None;
-
-        for c in input.chars() {
-            match c {
-                '0'..='9' => Self::push_atom_digit_front(c, &mut atom_buffer),
-                '(' => tokens.push(Token::LParen),
-                ')' => {
-                    if let Some(n) = atom_buffer.take() {
-                        tokens.push(Token::Atom(n));
-                    }
-                    tokens.push(Token::RParen);
-                }
-                c if Self::is_valid_operator(c as u8) => {
-                    if let Some(operator) = OPERATORS.get(&(c as u8)) {
-                        tokens.push(Token::Operator(operator.id))
-                    } else {
-                        log::warn!("<tokenizer> unknown operator: {}", c);
-                    }
-                }
-                _ => {
-                    if let Some(n) = atom_buffer.take() {
-                        tokens.push(Token::Atom(n));
-                    }
-                }
-            }
+impl Token {
+    pub fn is_atom(&self) -> bool {
+        match self {
+            Token::Atom(_) => true,
+            _ => false,
         }
-
-        tokens
     }
+    pub fn unwrap_atom(&self) -> Atom {
+        match self {
+            Token::Atom(a) => Atom(*a),
+            _ => panic!("unwrap_atom called on non-atom token"),
+        }
+    }
+}
 
-    fn push_atom_digit_front(c: char, current_number: &mut Option<i32>) {
+#[rustfmt::skip]
+    pub const OPERATOR_RUNES: [
+        u8; 12
+    ] = [b'+', b'-', b'*', b'/', b'%', b'^', b'&', b'|', b'=', b'!', b'>', b'<',];
+
+#[rustfmt::skip]
+    pub const KEYWORDS: [
+        &str; 2
+    ] = ["nil", "if"];
+
+pub fn operatorp(r: u8) -> bool {
+    OPERATOR_RUNES.contains(&r)
+}
+
+pub fn keywordp(s: &str) -> bool {
+    KEYWORDS.contains(&s)
+}
+
+#[derive(Debug, Default)]
+struct Buffers {
+    pub atom: Option<i32>,
+    pub keyword: String,
+}
+
+impl Buffers {
+    pub fn atomize(&mut self, c: char) {
         let digit = c.to_digit(10).unwrap() as i32;
-        *current_number = Some(current_number.unwrap_or(0) * 10 + digit);
+        self.atom = Some(self.atom.unwrap_or(0) * 10 + digit);
     }
-
-    fn is_valid_operator(op: u8) -> bool {
-        if OPERATOR_RUNES.contains(&op) {
-            return true;
+    pub fn take_buffers(&mut self, tokens: &mut Vec<Token>) {
+        if let Some(atom) = self.atom.take() {
+            tokens.push(Token::Atom(atom));
         }
-        false
+        if keywordp(&self.keyword) {
+            tokens.push(Token::Keyword(self.keyword.to_owned()));
+        }
+    }
+    pub fn push_take(&mut self, token: Token, tokens: &mut Vec<Token>) {
+        self.take_buffers(tokens);
+        tokens.push(token);
     }
 }
 
-pub const OPERATOR_RUNES: [u8; 12] = [
-    b'+', b'-', b'*', b'/', b'%', b'^', b'&', b'|', b'=', b'!', b'>', b'<',
-];
+pub fn tokenize(src: &str) -> Vec<Token> {
+    let mut tokens: Vec<Token> = vec![];
+    let mut buf = Buffers::default();
+
+    for c in src.chars() {
+        #[rustfmt::skip]
+            match c {
+                '0'..='9'               => buf.atomize(c),
+                '('                     => buf.push_take(Token::Laren, &mut tokens),
+                ')'                     => buf.push_take(Token::Raren, &mut tokens),
+                c if operatorp(c as u8) => tokens.push(Token::Operator(c as u8)),
+                ' '                     => buf.take_buffers(&mut tokens),
+                _                       => buf.keyword.push(c),
+            }
+    }
+
+    buf.take_buffers(&mut tokens);
+
+    tokens
+}

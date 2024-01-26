@@ -1,14 +1,14 @@
 [package]
-name = "lithium-tiny"
+name = "lithium"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "lilith-repl"
+name = "lithium-repl"
 path = "src/bin/repl.rs"
 
 [lib]
-name = "lilith"
+name = "lithium"
 path = "src/lib.rs"
 
 [dependencies]

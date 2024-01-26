@@ -23,9 +23,11 @@ impl Parser {
     fn parse_expression(iter: &mut Peekable<Iter<Token>>) -> Result<Value, String> {
         match iter.next() {
             Some(Token::Atom(n)) => Ok(Value::Atom(Atom(*n))),
-            Some(Token::LParen) => Self::parse_list(iter),
-            Some(Token::RParen) => Err("Unexpected ')'".into()),
+            Some(Token::Laren) => Self::parse_list(iter),
+            Some(Token::Raren) => Err("Unexpected ')'".into()),
             Some(Token::Operator(op)) => Self::parse_operator(op),
+            Some(Token::Keyword(_)) => unimplemented!(),
+            Some(Token::Symbol(_)) => unimplemented!(),
             None => Err("Unexpected end of input".into()),
         }
     }
@@ -33,7 +35,7 @@ impl Parser {
     fn parse_list(iter: &mut Peekable<Iter<Token>>) -> Result<Value, String> {
         let mut elements = Vec::new();
 
-        while iter.peek().map_or(false, |token| **token != Token::RParen) {
+        while iter.peek().map_or(false, |token| **token != Token::Raren) {
             elements.push(Rc::new(Self::parse_expression(iter)?));
         }
 

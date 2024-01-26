@@ -1,21 +1,21 @@
-use lilith::{eval::Eval, namespace, parser::Parser, token::Tokenizer};
+use lithium::{eval::Eval, namespace, parser::Parser, token::tokenize};
 use rustyline::error::ReadlineError;
 
-use lazy_static::lazy_static;
-#[rustfmt::skip] lazy_static! {
-   pub static ref OPERATORS: namespace::OperatorTable = 
-        namespace::OperatorTable::init();
+fn with_logs() {
+    std::env::set_var("RUST_LOG", "none,lithium=debug");
+    pretty_env_logger::init_custom_env("RUST_LOG");
 }
 
 fn main() -> Result<(), ReadlineError> {
-    pretty_env_logger::init();
+    #[rustfmt::skip]
+    #[cfg(debug_assertions)] with_logs();
     let mut rl = rustyline::DefaultEditor::new()?;
 
     loop {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
-                let tokens = Tokenizer::tokenize(&line);
+                let tokens = tokenize(&line);
                 log::info!("Got tokens: {:?}", tokens);
 
                 let expr = match Parser::parse(&tokens) {
