@@ -1,8 +1,11 @@
-use crate::prim::{Atom, Cell, Value};
+use crate::primitive::{Atom, Cell, Value};
 
 use std::rc::Rc;
 
-pub trait Eval {
+pub trait Eval
+where
+    Self: core::fmt::Debug,
+{
     fn eval(&self) -> Value;
 }
 
@@ -29,6 +32,7 @@ impl Eval for Value {
             Value::Function(function) => Value::Function(Rc::clone(function)),
             Value::Symbol(_)          => todo!(),
             Value::Operator(op)       => Value::Operator(Rc::clone(op)),
+            Value::Keyword(kw)        => Value::Keyword(Rc::clone(kw)),
         }
     }
 }

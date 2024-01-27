@@ -1,47 +1,36 @@
-use crate::prim::{Operator, Value};
+use crate::eval::Eval;
+use crate::primitive::{Keyword, Operator};
+use std::collections::HashMap;
 use std::rc::Rc;
 
-pub struct OperatorTable {
-    pub(crate) operators: std::collections::HashMap<u8, Operator>,
+#[derive(Debug)]
+pub struct Environment {
+    pub operators: HashMap<u8, Rc<Operator>>,
+    pub keywords: HashMap<String, Rc<Keyword>>,
 }
 
-impl Default for OperatorTable {
+impl Default for Environment {
     fn default() -> Self {
-        Self::init()
-    }
-}
-
-impl OperatorTable {
-    pub fn init() -> Self {
-        let mut table = Self {
-            operators: std::collections::HashMap::new(),
-        };
-
-        super::builtins::load_operators(&mut table);
-
-        log::debug!(
-            "Preloaded builtins: {:?}",
-            table.operators.keys().collect::<Vec<_>>()
+        let mut operators = HashMap::new();
+        let mut keywords = HashMap::new();
+        crate::load_builtin_ops!(operators,
+            b'+' => crate::builtins::add,
+            b'-' => crate::builtins::sub,
+            b'*' => crate::builtins::mul,
+            b'/' => crate::builtins::div,
+            b'=' => crate::builtins::eq,
+            b'>' => crate::builtins::ge,
         );
-
-        table
-    }
-
-    pub(crate) fn add_operator(
-        table: &mut std::collections::HashMap<u8, Operator>,
-        id: u8,
-        f: fn(&[Rc<Value>]) -> Value,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if table.contains_key(&id) {
-            Err("Operator already exists".into())
-        } else {
-            let op = Operator::new(id.clone(), f);
-            table.insert(id, op);
-            Ok(())
+        crate::load_builtin_keywords!(keywords, String::from("if") => ());
+        Self {
+            operators,
+            keywords,
         }
     }
+}
 
-    pub fn get(&self, id: &u8) -> Option<&Operator> {
-        self.operators.get(id)
+impl Environment {
+    pub fn operator_loaded(&self, id: &u8) -> bool {
+        self.operators.contains_key(id)
     }
 }

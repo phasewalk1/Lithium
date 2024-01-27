@@ -1,4 +1,4 @@
-use crate::prim::Atom;
+use crate::primitive::Atom;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
@@ -8,6 +8,7 @@ pub enum Token {
     Operator(u8),
     Keyword(String),
     Symbol(String),
+    Newline,
 }
 
 impl Token {
@@ -24,6 +25,8 @@ impl Token {
         }
     }
 }
+
+pub const COMMENT: &'static str = ";;";
 
 #[rustfmt::skip]
     pub const OPERATOR_RUNES: [
@@ -60,6 +63,7 @@ impl Buffers {
         }
         if keywordp(&self.keyword) {
             tokens.push(Token::Keyword(self.keyword.to_owned()));
+            self.keyword.clear();
         }
     }
     pub fn push_take(&mut self, token: Token, tokens: &mut Vec<Token>) {
@@ -72,6 +76,21 @@ pub fn tokenize(src: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
     let mut buf = Buffers::default();
 
+    // strip all lines starting with ';;' from src string
+    let src = src
+        .lines()
+        .filter(|line| !line.starts_with(COMMENT))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    println!("cleaned src: {:?}", src);
+
+    if src.is_empty() {
+        return tokens;
+    }
+
+    println!("src: {:?}", src);
+
     for c in src.chars() {
         #[rustfmt::skip]
             match c {
@@ -80,6 +99,7 @@ pub fn tokenize(src: &str) -> Vec<Token> {
                 ')'                     => buf.push_take(Token::Raren, &mut tokens),
                 c if operatorp(c as u8) => tokens.push(Token::Operator(c as u8)),
                 ' '                     => buf.take_buffers(&mut tokens),
+                '\n'                    => { tokens.push(Token::Newline); buf.take_buffers(&mut tokens); },
                 _                       => buf.keyword.push(c),
             }
     }

@@ -1,15 +1,36 @@
-use lithium::{eval::Eval, namespace, parser::Parser, token::tokenize};
+use lithium::{eval::Eval, parser::Parser, token::tokenize};
 use rustyline::error::ReadlineError;
 
-fn with_logs() {
-    std::env::set_var("RUST_LOG", "none,lithium=debug");
+fn with_logs(level: &str) {
+    let env_str = format!("none,lithium={}", level);
+    std::env::set_var("RUST_LOG", &env_str);
     pretty_env_logger::init_custom_env("RUST_LOG");
 }
 
+fn load_script(path: &str) {
+    let contents = std::fs::read_to_string(path).unwrap();
+    let tokens = tokenize(&contents);
+    let parser = Parser::default();
+    let expr = parser.parse(&tokens).unwrap();
+    let evaluated = expr.eval();
+    log::info!("{:?}", evaluated);
+}
+
 fn main() -> Result<(), ReadlineError> {
-    #[rustfmt::skip]
-    #[cfg(debug_assertions)] with_logs();
+    let args = std::env::args().collect::<Vec<_>>();
+    #[cfg(debug_assertions)]
+    with_logs("debug");
+    if args.len() > 1 && args[1] == "load" {
+        let path = &args[2];
+        load_script(path);
+        return Ok(());
+    }
+
     let mut rl = rustyline::DefaultEditor::new()?;
+    let parser = Parser::default();
+
+    log::debug!("Starting REPL");
+    log::debug!("Lithium: {:?}", parser.namespace);
 
     loop {
         let readline = rl.readline(">> ");
@@ -18,7 +39,7 @@ fn main() -> Result<(), ReadlineError> {
                 let tokens = tokenize(&line);
                 log::info!("Got tokens: {:?}", tokens);
 
-                let expr = match Parser::parse(&tokens) {
+                let expr = match parser.parse(&tokens) {
                     Ok(value) => {
                         log::info!("Built Abstract-Syntax-Tree: {:?}", value);
                         value

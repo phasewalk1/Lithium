@@ -1,34 +1,12 @@
-use crate::eval::Eval;
+use crate::{eval::Eval, identifiers::SymbolId};
 use std::rc::Rc;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub struct Atom(pub i32);
 
-pub trait Identifier {
-    fn id(&self) -> Vec<u8>;
-}
-
-#[derive(Debug, PartialEq)]
-pub struct SymbolId([u8; 32]);
-
-impl TryFrom<&str> for SymbolId {
-    type Error = Box<dyn std::error::Error>;
-
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        match s.len() {
-            0..=32 => {
-                let mut id = [0; 32];
-                id[..s.len()].copy_from_slice(s.as_bytes());
-                Ok(Self(id))
-            }
-            _ => Err("SymbolId must be 32 bytes or less".into()),
-        }
-    }
-}
-
-impl Identifier for SymbolId {
-    fn id(&self) -> Vec<u8> {
-        self.0.to_vec()
+impl Atom {
+    pub fn wrap(&self) -> Value {
+        Value::Atom(Atom(self.0))
     }
 }
 
@@ -49,25 +27,34 @@ impl Function {
     }
 }
 
-impl Identifier for u8 {
-    fn id(&self) -> Vec<u8> {
-        vec![*self]
+#[derive(Debug, Clone)]
+pub struct OperatorFunc(pub fn(Atom, Atom) -> Value);
+
+impl From<fn(Atom, Atom) -> Value> for OperatorFunc {
+    fn from(f: fn(Atom, Atom) -> Value) -> Self {
+        Self(f)
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Operator {
     pub(crate) id: u8,
-    pub(crate) f: fn(&[Rc<Value>]) -> Value,
+    pub(crate) f: OperatorFunc,
+}
+
+impl std::cmp::PartialEq for Operator {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }
 
 impl Operator {
-    pub fn new(id: u8, f: fn(&[Rc<Value>]) -> Value) -> Self {
-        Operator { id, f }
+    pub fn new(id: u8, f: fn(Atom, Atom) -> Value) -> Self {
+        Operator { id, f: f.into() }
     }
 
-    pub(super) fn apply(&self, args: &[std::rc::Rc<Value>]) -> Value {
-        (self.f)(args)
+    pub(super) fn apply(&self, a: Atom, b: Atom) -> Value {
+        (self.f.0)(a, b)
     }
 }
 
@@ -151,6 +138,17 @@ impl Cell {
     }
 }
 
+#[derive(Debug)]
+pub struct Keyword {
+    pub id: String,
+}
+
+impl std::cmp::PartialEq for Keyword {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
 #[derive(PartialEq)]
 pub enum Value {
     Nil,
@@ -160,6 +158,7 @@ pub enum Value {
     Operator(Rc<Operator>),
     Symbol(SymbolId),
     Cell(Cell),
+    Keyword(Rc<Keyword>),
 }
 
 impl std::fmt::Debug for Value {
@@ -172,6 +171,16 @@ impl std::fmt::Debug for Value {
             Value::Symbol(s) => write!(f, "<sym> {:?}", s),
             Value::Cell(c) => write!(f, "<cell> ({:?} . {:?})", c.car, c.cdr),
             Value::Operator(op) => write!(f, "<op> {:?}@{:?}", op.id, op.f),
+            Value::Keyword(kw) => write!(f, "<kw> {:?}", kw.id),
+        }
+    }
+}
+
+impl Value {
+    pub fn unwrap_atom(&self) -> Atom {
+        match self {
+            Value::Atom(atom) => Atom(atom.0),
+            _ => panic!("Expected atom, got {:?}", self),
         }
     }
 }
