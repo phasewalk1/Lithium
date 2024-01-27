@@ -1,4 +1,7 @@
-use lithium::{eval::Eval, parser::Parser, token::tokenize};
+use lithium::{
+    grunt::{parser::Parser, tokens::tokenize},
+    interface::eval::Eval,
+};
 use rustyline::error::ReadlineError;
 
 fn with_logs(level: &str) {
@@ -16,20 +19,21 @@ fn load_script(path: &str) {
     log::info!("{:?}", evaluated);
 }
 
-fn load_check() -> Result<(), Box<dyn std::error::Error>> {
+fn load_check() -> Option<()> {
     let args = std::env::args().collect::<Vec<_>>();
     if args.len() > 1 && args[1] == "load" {
         let path = &args[2];
         load_script(path);
+        return Some(());
     }
-    Ok(())
+    None
 }
 
 fn main() -> Result<(), ReadlineError> {
     #[cfg(debug_assertions)]
     with_logs("debug");
 
-    if let Ok(_) = load_check() {
+    if let Some(_) = load_check() {
         return Ok(());
     }
 

@@ -1,18 +1,18 @@
 use crate::primitive::{Atom, Value};
 use std::{collections::HashMap, rc::Rc};
 
-impl Default for crate::namespace::Environment {
+impl Default for super::namespace::Environment {
     fn default() -> Self {
         let mut operators = HashMap::new();
         let mut keywords = HashMap::new();
 
         crate::load_builtin_ops!(operators,
-            b'+' => crate::builtins::add,
-            b'-' => crate::builtins::sub,
-            b'*' => crate::builtins::mul,
-            b'/' => crate::builtins::div,
-            b'=' => crate::builtins::eq,
-            b'>' => crate::builtins::ge,
+            b'+' => crate::environment::builtins::add,
+            b'-' => crate::environment::builtins::sub,
+            b'*' => crate::environment::builtins::mul,
+            b'/' => crate::environment::builtins::div,
+            b'=' => crate::environment::builtins::eq,
+            b'>' => crate::environment::builtins::ge,
         );
         crate::load_builtin_keywords!(keywords, String::from("if") => ());
 

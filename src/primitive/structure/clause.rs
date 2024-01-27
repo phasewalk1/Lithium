@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-    eval::Eval,
+    interface::eval::Eval,
     primitive::{Atom, Cell, Value},
 };
 

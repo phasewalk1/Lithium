@@ -1,6 +1,6 @@
-use crate::namespace::Environment;
+use crate::environment::namespace::Environment;
+use crate::grunt::tokens::Token;
 use crate::primitive::{Atom, Cell, Value};
-use crate::token::Token;
 use std::iter::Peekable;
 use std::rc::Rc;
 use std::slice::Iter;

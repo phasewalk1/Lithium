@@ -1,3 +1,4 @@
+use super::substitution::{CbvSubstitute, *};
 use crate::primitive::{Atom, Cell, Value};
 
 use std::rc::Rc;
@@ -17,7 +18,7 @@ impl Eval for Atom {
 
 impl Eval for Cell {
     fn eval(&self) -> Value {
-        crate::reducers::BetaReducer::new(&self).cbv()
+        CbvSubstitute(&self).subs()
     }
 }
 
