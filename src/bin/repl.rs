@@ -16,13 +16,20 @@ fn load_script(path: &str) {
     log::info!("{:?}", evaluated);
 }
 
-fn main() -> Result<(), ReadlineError> {
+fn load_check() -> Result<(), Box<dyn std::error::Error>> {
     let args = std::env::args().collect::<Vec<_>>();
-    #[cfg(debug_assertions)]
-    with_logs("debug");
     if args.len() > 1 && args[1] == "load" {
         let path = &args[2];
         load_script(path);
+    }
+    Ok(())
+}
+
+fn main() -> Result<(), ReadlineError> {
+    #[cfg(debug_assertions)]
+    with_logs("debug");
+
+    if let Ok(_) = load_check() {
         return Ok(());
     }
 
@@ -50,7 +57,6 @@ fn main() -> Result<(), ReadlineError> {
                 };
 
                 let evaluated = expr.eval();
-
                 log::info!("Value ---> {:?}", evaluated);
             }
             Err(ReadlineError::Interrupted) => {

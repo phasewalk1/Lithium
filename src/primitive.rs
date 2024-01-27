@@ -1,4 +1,4 @@
-use crate::{eval::Eval, identifiers::SymbolId};
+use crate::identifiers::SymbolId;
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -70,8 +70,8 @@ pub struct Cell {
     pub(super) cdr: Rc<Value>,
 }
 
-#[allow(dead_code)]
 impl Cell {
+    #[allow(dead_code)]
     pub(super) fn list(car: Value, cdr: Value) -> Self {
         let tail = Value::Nil;
         Self {
@@ -102,26 +102,6 @@ impl Cell {
         } else {
             unreachable!()
         }
-    }
-
-    pub(super) fn reduce_args(&self) -> Vec<Rc<Value>> {
-        let mut args = vec![];
-        let mut curr = self;
-
-        while let Value::Cell(ref cell) = *curr.cdr {
-            args.push(Rc::new(cell.car.eval()));
-            curr = &cell;
-        }
-
-        args
-    }
-
-    pub(super) fn car(&self) -> &Value {
-        &self.car
-    }
-
-    pub(super) fn cdr(&self) -> &Value {
-        &self.cdr
     }
 
     pub(super) fn disassemble(&self) -> (Rc<Value>, Vec<Rc<Value>>) {

@@ -1,3 +1,5 @@
+use std::{collections::HashMap, rc::Rc};
+
 use crate::primitive::{Atom, Value};
 
 pub(crate) fn add(a: Atom, b: Atom) -> Value {
@@ -29,5 +31,24 @@ pub(crate) fn ge(a: Atom, b: Atom) -> Value {
         Value::T
     } else {
         Value::Nil
+    }
+}
+impl Default for crate::namespace::Environment {
+    fn default() -> Self {
+        let mut operators = HashMap::new();
+        let mut keywords = HashMap::new();
+        crate::load_builtin_ops!(operators,
+            b'+' => crate::builtins::add,
+            b'-' => crate::builtins::sub,
+            b'*' => crate::builtins::mul,
+            b'/' => crate::builtins::div,
+            b'=' => crate::builtins::eq,
+            b'>' => crate::builtins::ge,
+        );
+        crate::load_builtin_keywords!(keywords, String::from("if") => ());
+        Self {
+            operators,
+            keywords,
+        }
     }
 }

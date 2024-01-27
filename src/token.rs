@@ -29,14 +29,14 @@ impl Token {
 pub const COMMENT: &'static str = ";;";
 
 #[rustfmt::skip]
-    pub const OPERATOR_RUNES: [
-        u8; 12
-    ] = [b'+', b'-', b'*', b'/', b'%', b'^', b'&', b'|', b'=', b'!', b'>', b'<',];
+pub const OPERATOR_RUNES: [
+    u8; 12
+] = [b'+', b'-', b'*', b'/', b'%', b'^', b'&', b'|', b'=', b'!', b'>', b'<',];
 
 #[rustfmt::skip]
-    pub const KEYWORDS: [
-        &str; 2
-    ] = ["nil", "if"];
+pub const KEYWORDS: [
+    &str; 2
+] = ["nil", "if"];
 
 pub fn operatorp(r: u8) -> bool {
     OPERATOR_RUNES.contains(&r)

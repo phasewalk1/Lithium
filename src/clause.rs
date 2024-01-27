@@ -11,7 +11,7 @@ pub fn is_conditional(cell: &Cell) -> bool {
             if kw.id == "if" {
                 log::debug!("Found if keyword");
                 match &cell.cdr as &Value {
-                    Value::Cell(cdr) => true,
+                    Value::Cell(_) => true,
                     _ => {
                         log::warn!("Cannot evaluate {:?} as conditional", cell);
                         false

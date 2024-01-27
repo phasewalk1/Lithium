@@ -1,4 +1,3 @@
-use crate::clause as branch;
 use crate::namespace::Environment;
 use crate::primitive::{Atom, Cell, Value};
 use crate::token::Token;
@@ -26,6 +25,7 @@ impl Parser {
 
         if let Some(c) = iter.peek() {
             if c == &&Token::Newline {
+                println!("parsed: {:?}", parsed);
                 return Ok(parsed);
             }
             Err("Unexpected tokens after parsing".into())
