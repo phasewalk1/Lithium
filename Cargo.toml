@@ -8,12 +8,16 @@ license = "Unlicense"
 name = "lithium-repl"
 path = "src/bin/repl.rs"
 
+[[test]]
+name = "parser-tests"
+path = "tests/parser.rs"
+
 [lib]
 name = "lithium"
 path = "src/lib.rs"
 
 [dependencies]
-lazy_static = "1.4.0"
 log = "0.4.20"
 pretty_env_logger = "0.5.0"
 rustyline = "13.0.0"
+nom = "7.0"

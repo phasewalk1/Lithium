@@ -1,7 +1,3 @@
-use lithium::{
-    grunt::{parser::Parser, tokens::tokenize},
-    interface::eval::Eval,
-};
 use rustyline::error::ReadlineError;
 
 fn with_logs(level: &str) {
@@ -10,58 +6,19 @@ fn with_logs(level: &str) {
     pretty_env_logger::init_custom_env("RUST_LOG");
 }
 
-fn load_script(path: &str) {
-    let contents = std::fs::read_to_string(path).unwrap();
-    let tokens = tokenize(&contents);
-    let parser = Parser::default();
-    let expr = parser.parse(&tokens).unwrap();
-    let evaluated = expr.eval();
-    log::info!("{:?}", evaluated);
-}
-
-fn load_check() -> Option<()> {
-    let args = std::env::args().collect::<Vec<_>>();
-    if args.len() > 1 && args[1] == "load" {
-        let path = &args[2];
-        load_script(path);
-        return Some(());
-    }
-    None
-}
-
 fn main() -> Result<(), ReadlineError> {
     #[cfg(debug_assertions)]
     with_logs("debug");
 
-    if let Some(_) = load_check() {
-        return Ok(());
-    }
-
     let mut rl = rustyline::DefaultEditor::new()?;
-    let parser = Parser::default();
 
     log::debug!("Starting REPL");
-    log::debug!("Lithium: {:?}", parser.namespace);
 
     loop {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
-                let tokens = tokenize(&line);
-                log::info!("Got tokens: {:?}", tokens);
-
-                let expr = match parser.parse(&tokens) {
-                    Ok(value) => {
-                        log::info!("Built Abstract-Syntax-Tree: {:?}", value);
-                        value
-                    }
-                    Err(err) => {
-                        panic!("Failed to parse expr error: {:?}", err);
-                    }
-                };
-
-                let evaluated = expr.eval();
-                log::info!("Value ---> {:?}", evaluated);
+                log::debug!("Line: {}", line);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
